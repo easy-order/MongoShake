@@ -1,9 +1,11 @@
 name: Docker Build and Push
 
 on:
-  push:
-    tags:
-      - '*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to build Docker image for'
+        required: true
 
 jobs:
   build-and-push:
@@ -12,6 +14,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.inputs.tag }}
 
       - name: Login to Docker Registry
         uses: docker/login-action@v1
@@ -20,16 +24,12 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Determine Git Tag
-        id: git_tag
-        run: echo ::set-output name=TAG::${GITHUB_REF#refs/*/}
-
       - name: Build Docker image
         run: |
-          docker build -t registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ steps.git_tag.outputs.TAG }} .
-          docker tag registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ steps.git_tag.outputs.TAG }} registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:latest
+          docker build -t registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ github.event.inputs.tag }} .
+          docker tag registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ github.event.inputs.tag }} registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:latest
       
       - name: Push Docker image
         run: |
-          docker push registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ steps.git_tag.outputs.TAG }}
+          docker push registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:${{ github.event.inputs.tag }}
           docker push registry.cn-qingdao.aliyuncs.com/eo/mongo-shake:latest
